@@ -41,7 +41,7 @@ AeroVoice AI is a real-time, low-latency conversational voice agent and human es
    - One-click supervisor takeover button and direct bidirectional messaging.
 
 6. **Interactive Cockpit Web Interface**
-   - High-end dark mode aerospace UI with dynamic glowing accents.
+   - Editorial light UI: porcelain ground, a single oxblood accent, Newsreader serif headlines, Inter UI and Space Mono labels.
    - HTML5 Canvas real-time waveform visualizer.
    - Web Speech API microphone input & neural voice playback.
    - Flight status preview cards, Baggage tracking timeline cards, and Rebooking cards.
@@ -136,7 +136,7 @@ AeroVoice AI/
 │   │   └── websocket_supervisor.py # Supervisor portal WebSocket (/ws/supervisor)
 │   └── static/
 │       ├── index.html            # Web cockpit terminal & supervisor UI
-│       ├── css/styles.css        # Aviation dark-mode glassmorphism styling
+│       ├── css/styles.css        # Editorial light theme (porcelain + oxblood)
 │       └── js/app.js             # Web Audio visualizer, Web Speech, & WS logic
 ├── tests/
 │   ├── test_aviation_engine.py   # Pytest suite for core engine logic

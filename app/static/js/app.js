@@ -109,17 +109,17 @@ function handleVoiceEvent(data) {
     } 
     else if (type === "escalation_alert") {
         setAgentBadge("ESCALATED TO SUPERVISOR", "badge-escalated");
-        appendMessage("agent", `⚠️ ${data.text}`, false);
+        appendMessage("agent", data.text, false);
         speakText(data.text);
         showSupervisorAlertPill();
-    } 
+    }
     else if (type === "supervisor_takeover") {
         setAgentBadge("SUPERVISOR LIVE", "badge-supervisor");
-        appendMessage("supervisor", `👨‍✈️ ${data.message}`, false);
+        appendMessage("supervisor", data.message, false);
         speakText(data.message);
-    } 
+    }
     else if (type === "supervisor_message") {
-        appendMessage("supervisor", `👨‍✈️ [${data.speaker}]: ${data.message}`, false);
+        appendMessage("supervisor", `[${data.speaker}]: ${data.message}`, false);
         speakText(data.message);
     } 
     else if (type === "barge_in_flushed") {
@@ -280,7 +280,7 @@ function initVisualizerCanvas() {
 
 function drawIdleWaveform(ctx, width, height) {
     ctx.clearRect(0, 0, width, height);
-    ctx.strokeStyle = "rgba(6, 182, 212, 0.3)";
+    ctx.strokeStyle = "#d6d3cd";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(0, height / 2);
@@ -305,12 +305,8 @@ function startVisualizer() {
             const freq = Math.sin(step + i * 0.4) * 0.5 + 0.5;
             const barHeight = Math.max(4, freq * (canvas.height * 0.7));
 
-            const gradient = ctx.createLinearGradient(0, centerY - barHeight/2, 0, centerY + barHeight/2);
-            gradient.addColorStop(0, "#06b6d4");
-            gradient.addColorStop(0.5, "#3b82f6");
-            gradient.addColorStop(1, "#10b981");
-
-            ctx.fillStyle = gradient;
+            // Solid ink bars; louder bars read darker
+            ctx.fillStyle = `rgba(23, 22, 26, ${0.25 + freq * 0.75})`;
             ctx.fillRect(i * (barWidth + 3), centerY - barHeight / 2, barWidth, barHeight);
         }
 
@@ -392,12 +388,24 @@ function updateConfidenceHUD(confidence) {
    5. INTERACTIVE AVIATION CARDS (Flight, Baggage, Rebooking)
    ========================================================================= */
 
+const PLANE_SVG = `<svg class="plane-glyph" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`;
+
+function routeArrow(label) {
+    return `
+        <div class="route-arrow">
+            <span class="route-line">${PLANE_SVG}</span>
+            <small>${label}</small>
+        </div>
+    `;
+}
+
 function renderAviationCard(cardType, data) {
     const slot = document.getElementById("aviation-card-slot");
     slot.innerHTML = "";
     slot.style.display = "block";
 
     if (cardType === "flight_card") {
+        const isDelayed = data.status === "DELAYED";
         slot.innerHTML = `
             <div class="flight-preview-card">
                 <div class="card-top">
@@ -411,23 +419,20 @@ function renderAviationCard(cardType, data) {
                         <span class="airport-code">${data.origin}</span>
                         <span class="airport-name">${data.origin_name}</span>
                     </div>
-                    <div class="route-arrow">
-                        <span>✈️</span>
-                        <small>${data.aircraft_type}</small>
-                    </div>
-                    <div class="airport-block" style="text-align: right;">
+                    ${routeArrow(data.aircraft_type)}
+                    <div class="airport-block is-end">
                         <span class="airport-code">${data.destination}</span>
                         <span class="airport-name">${data.destination_name}</span>
                     </div>
                 </div>
                 <div class="card-details-grid">
                     <div class="detail-item">
-                        <span class="detail-lbl">Scheduled Dep</span>
+                        <span class="detail-lbl">Scheduled dep</span>
                         <span class="detail-val">${data.scheduled_departure.split(" ")[1]}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-lbl">Estimated Dep</span>
-                        <span class="detail-val" style="color: ${data.status === 'DELAYED' ? '#f59e0b' : '#fff'}">${data.estimated_departure.split(" ")[1] || data.estimated_departure}</span>
+                        <span class="detail-lbl">Estimated dep</span>
+                        <span class="detail-val ${isDelayed ? "is-alert" : ""}">${data.estimated_departure.split(" ")[1] || data.estimated_departure}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-lbl">Terminal</span>
@@ -435,12 +440,12 @@ function renderAviationCard(cardType, data) {
                     </div>
                     <div class="detail-item">
                         <span class="detail-lbl">Gate</span>
-                        <span class="detail-val" style="color: #06b6d4;">${data.gate}</span>
+                        <span class="detail-val">${data.gate}</span>
                     </div>
                 </div>
             </div>
         `;
-    } 
+    }
     else if (cardType === "pnr_card") {
         const pnr = data.pnr;
         const fl = data.flight;
@@ -448,38 +453,36 @@ function renderAviationCard(cardType, data) {
             <div class="flight-preview-card">
                 <div class="card-top">
                     <div class="card-title-group">
-                        <span class="airline-tag">PNR: ${pnr.pnr_code} • ${pnr.passenger_name}</span>
+                        <span class="airline-tag"><code>${pnr.pnr_code}</code> · ${pnr.passenger_name}</span>
                     </div>
-                    <span class="status-badge ON_TIME">${pnr.status}</span>
+                    <span class="status-badge ${pnr.status}">${pnr.status}</span>
                 </div>
                 <div class="route-display">
                     <div class="airport-block">
                         <span class="airport-code">${pnr.origin}</span>
-                        <span class="airport-name">Date: ${pnr.travel_date}</span>
+                        <span class="airport-name">${pnr.travel_date}</span>
                     </div>
-                    <div class="route-arrow">
-                        <span>✈️ ${pnr.flight_number}</span>
-                    </div>
-                    <div class="airport-block" style="text-align: right;">
+                    ${routeArrow(pnr.flight_number)}
+                    <div class="airport-block is-end">
                         <span class="airport-code">${pnr.destination}</span>
                         <span class="airport-name">${pnr.cabin_class}</span>
                     </div>
                 </div>
                 <div class="card-details-grid">
                     <div class="detail-item">
-                        <span class="detail-lbl">Assigned Seat</span>
-                        <span class="detail-val" style="color: #06b6d4; font-size: 1.1rem;">${pnr.seat}</span>
+                        <span class="detail-lbl">Seat</span>
+                        <span class="detail-val is-figure is-accent">${pnr.seat}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-lbl">Cabin</span>
                         <span class="detail-val">${pnr.cabin_class}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-lbl">Flight Status</span>
+                        <span class="detail-lbl">Flight status</span>
                         <span class="detail-val">${fl ? fl.status : 'CONFIRMED'}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-lbl">Baggage Tags</span>
+                        <span class="detail-lbl">Baggage tags</span>
                         <span class="detail-val">${pnr.baggage_tags.join(", ") || 'None'}</span>
                     </div>
                 </div>
@@ -491,32 +494,31 @@ function renderAviationCard(cardType, data) {
             <div class="baggage-preview-card">
                 <div class="card-top">
                     <div class="card-title-group">
-                        <span class="airline-tag">🧳 Tag: ${data.tag_number} • ${data.passenger_name}</span>
+                        <span class="airline-tag"><code>${data.tag_number}</code> · ${data.passenger_name}</span>
                     </div>
-                    <span class="status-badge ON_TIME">${data.status}</span>
+                    <span class="status-badge ${data.status}">${data.status}</span>
                 </div>
-                <div style="margin: 0.75rem 0;">
-                    <div style="font-size: 0.82rem; color: #94a3b8;">Flight: <strong>${data.flight_number}</strong> | PNR: <code>${data.pnr_code}</code></div>
-                    <div style="font-size: 0.9rem; color: #fff; margin-top: 4px;">Last Location: <strong style="color: #06b6d4;">${data.last_seen_location}</strong></div>
-                    <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Updated: ${data.last_updated}</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-size: 0.8rem; color: #cbd5e1;">
-                    ℹ️ ${data.notes || 'Telemetry normal. Baggage in transit.'}
-                </div>
+                <div class="card-meta">Flight <strong>${data.flight_number}</strong> · PNR <code>${data.pnr_code}</code></div>
+                <div class="card-location">Last seen at <strong>${data.last_seen_location}</strong></div>
+                <div class="card-updated">Updated ${data.last_updated}</div>
+                <div class="card-note">${data.notes || 'Telemetry normal. Baggage in transit.'}</div>
             </div>
         `;
     }
     else if (cardType === "rebook_card") {
         const options = data.options || [];
         let optionsHtml = options.map((opt, idx) => `
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid ${opt.recommended ? '#10b981' : 'rgba(255,255,255,0.1)'}; padding: 10px; border-radius: 8px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="rebook-option ${opt.recommended ? 'is-recommended' : ''}">
                 <div>
-                    <strong style="color: #fff;">${opt.airline} ${opt.flight_number}</strong>
-                    <div style="font-size: 0.75rem; color: #94a3b8;">${opt.origin} → ${opt.destination} • Departs: ${opt.departure_time}</div>
-                    <div style="font-size: 0.72rem; color: #10b981;">${opt.available_seats} seats remaining • Zero Fare Difference</div>
+                    <div class="rebook-option-title">
+                        ${opt.airline} ${opt.flight_number}
+                        ${opt.recommended ? '<span class="rec-tag">Recommended</span>' : ''}
+                    </div>
+                    <div class="rebook-option-meta">${opt.origin} → ${opt.destination} · departs ${opt.departure_time}</div>
+                    <div class="rebook-option-note">${opt.available_seats} seats left · no fare difference</div>
                 </div>
-                <button onclick="confirmRebooking('${opt.flight_number}')" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
-                    Confirm Rebooking
+                <button class="${opt.recommended ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="confirmRebooking('${opt.flight_number}')">
+                    Confirm rebooking
                 </button>
             </div>
         `).join("");
@@ -524,10 +526,10 @@ function renderAviationCard(cardType, data) {
         slot.innerHTML = `
             <div class="rebook-preview-card">
                 <div class="card-top">
-                    <span class="airline-tag">🔄 Available Flight Rebooking Options</span>
-                    <span class="status-badge ON_TIME">INSTANT REBOOK</span>
+                    <span class="airline-tag">Rebooking options</span>
+                    <span class="status-badge">Instant rebook</span>
                 </div>
-                <p style="font-size: 0.82rem; color: #94a3b8;">Selected partner flight inventory with zero change penalty fee:</p>
+                <p class="card-lede">Partner flight inventory with no change fee:</p>
                 ${optionsHtml}
             </div>
         `;
@@ -667,7 +669,7 @@ function renderSupervisorCallsList(sessions) {
         item.innerHTML = `
             <div class="call-item-top">
                 <span>Session: <code>${s.session_id}</code></span>
-                <span style="color: ${isEscalated ? '#f43f5e' : '#10b981'}">${s.status}</span>
+                <span class="call-status ${isEscalated ? 'is-alert' : ''}">${s.status}</span>
             </div>
             <div class="call-item-meta">
                 <span>Passenger: ${s.passenger_name || 'Anonymous'}</span>
@@ -710,11 +712,11 @@ async function selectSupervisorSession(id) {
         sendBtn.disabled = false;
 
         if (session.status === "SUPERVISOR_ACTIVE") {
-            takeoverBtn.innerText = "✅ Supervisor Active (Connected)";
-            takeoverBtn.style.background = "#10b981";
+            takeoverBtn.innerText = "Supervisor connected";
+            takeoverBtn.classList.add("is-connected");
         } else {
-            takeoverBtn.innerText = "🎙️ One-Click Takeover";
-            takeoverBtn.style.background = "";
+            takeoverBtn.innerText = "One-click takeover";
+            takeoverBtn.classList.remove("is-connected");
         }
     } catch(e) {
         console.error("Error loading session:", e);
@@ -852,7 +854,7 @@ async function renderPnrTable() {
             <td>${p.flight_number} (${p.origin} → ${p.destination})</td>
             <td>${p.travel_date}</td>
             <td><strong>${p.seat}</strong> (${p.cabin_class})</td>
-            <td><span class="status-badge ON_TIME">${p.status}</span></td>
+            <td><span class="status-badge ${p.status}">${p.status}</span></td>
             <td>${p.baggage_tags.join(", ") || 'None'}</td>
         </tr>
     `).join("");
@@ -889,7 +891,7 @@ async function renderBaggageTable() {
             <td><code>${b.tag_number}</code></td>
             <td>${b.passenger_name}</td>
             <td>${b.flight_number} (PNR: <code>${b.pnr_code}</code>)</td>
-            <td><span class="status-badge ON_TIME">${b.status}</span></td>
+            <td><span class="status-badge ${b.status}">${b.status}</span></td>
             <td><strong>${b.last_seen_location}</strong></td>
             <td>${b.last_updated}</td>
             <td>${b.notes || '—'}</td>

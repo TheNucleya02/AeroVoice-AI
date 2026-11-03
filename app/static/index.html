@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroVoice AI — Autonomous Aviation Voice Agent & Supervisor Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="aerospace-grid-bg"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <!-- Header Navigation -->
+    <header class="app-header">
+        <div class="header-brand">
+            <div class="radar-pulse-icon">
+                <div class="radar-sweep"></div>
+                <div class="radar-dot"></div>
+            </div>
+            <div>
+                <h1 class="brand-title">AERO<span>VOICE</span> <span class="badge-ai">AI</span></h1>
+                <p class="brand-subtitle">Autonomous Voice Agent & Human Escalation Gateway • IIIT Una</p>
+            </div>
+        </div>
+
+        <nav class="header-nav">
+            <button class="nav-tab-btn active" id="tab-passenger-btn" onclick="switchTab('passenger')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                Passenger Terminal
+            </button>
+            <button class="nav-tab-btn" id="tab-supervisor-btn" onclick="switchTab('supervisor')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Supervisor Command Center
+                <span class="live-pill" id="supervisor-alert-badge" style="display: none;">ALERT</span>
+            </button>
+            <button class="nav-tab-btn" id="tab-database-btn" onclick="switchTab('database')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                Aviation Data
+            </button>
+        </nav>
+
+        <div class="header-status">
+            <div class="connection-indicator connected" id="ws-indicator"></div>
+            <span id="ws-status-text">Sub-800ms Stream Connected</span>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container">
+        <!-- TAB 1: PASSENGER VOICE TERMINAL -->
+        <section id="view-passenger" class="tab-view active">
+            <div class="cockpit-grid">
+                
+                <!-- Left Panel: Voice Control & Audio Visualizer -->
+                <div class="cockpit-panel voice-console-panel">
+                    <div class="panel-header">
+                        <h2>Vocal Audio Pipeline</h2>
+                        <div class="agent-badge badge-idle" id="agent-state-badge">LISTENING</div>
+                    </div>
+
+                    <!-- Audio Visualizer Canvas -->
+                    <div class="visualizer-container">
+                        <canvas id="waveform-canvas" width="400" height="130"></canvas>
+                        <div class="visualizer-overlay" id="visualizer-overlay-text">Microphone Ready (Linear 16kHz PCM)</div>
+                    </div>
+
+                    <!-- Voice Mic & Barge-In Controls -->
+                    <div class="voice-actions">
+                        <button class="mic-button" id="mic-toggle-btn" onclick="toggleMicrophone()">
+                            <div class="mic-inner-ring"></div>
+                            <svg class="mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                        </button>
+                        <p class="mic-tip" id="mic-status-label">Click microphone or push to talk</p>
+
+                        <button class="barge-in-btn" id="barge-in-trigger" onclick="triggerBargeIn()" title="Simulates human speech interruption while agent is talking">
+                            ⚡ Interrupt Agent (Barge-In)
+                        </button>
+                    </div>
+
+                    <!-- Multi-Factor Confidence Metric Box (Section 3.1.5) -->
+                    <div class="confidence-hud-card">
+                        <div class="hud-header">
+                            <span>Multi-Factor Confidence Engine (C ≥ 0.85)</span>
+                            <span class="hud-score" id="composite-score-text">0.96</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="composite-progress-bar" style="width: 96%;"></div>
+                        </div>
+                        <div class="hud-metrics-grid">
+                            <div class="hud-metric-item">
+                                <span class="metric-label">STT Certainty (w=0.40)</span>
+                                <span class="metric-val" id="metric-stt-val">0.98</span>
+                            </div>
+                            <div class="hud-metric-item">
+                                <span class="metric-label">Intent Clarity (w=0.35)</span>
+                                <span class="metric-val" id="metric-intent-val">0.96</span>
+                            </div>
+                            <div class="hud-metric-item">
+                                <span class="metric-label">Sentiment / Valence (w=0.25)</span>
+                                <span class="metric-val" id="metric-sentiment-val">0.92</span>
+                            </div>
+                            <div class="hud-metric-item">
+                                <span class="metric-label">Escalation Status</span>
+                                <span class="metric-val status-normal" id="metric-escalation-val">NOMINAL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Voice Demo Scenarios for instant testing -->
+                    <div class="demo-scenarios-section">
+                        <span class="scenarios-title">Quick Test Queries (Click to Speak):</span>
+                        <div class="scenario-chips">
+                            <button class="chip-btn" onclick="sendSampleQuery('What is the status of flight AI101?')">✈️ Flight AI101 Status</button>
+                            <button class="chip-btn" onclick="sendSampleQuery('My PNR is W7X9K2, what seat am I assigned?')">🎫 Check PNR W7X9K2</button>
+                            <button class="chip-btn" onclick="sendSampleQuery('Where is my luggage BAG-90812?')">🧳 Track Bag BAG-90812</button>
+                            <button class="chip-btn" onclick="sendSampleQuery('Is flight DL402 from JFK on time or delayed?')">⏱️ Delayed DL402</button>
+                            <button class="chip-btn" onclick="sendSampleQuery('My flight BA178 was cancelled. Rebook me to London right now!')">🔄 Cancelled BA178 Rebook</button>
+                            <button class="chip-btn alert-chip" onclick="sendSampleQuery('This service is terrible! I am stranded at the airport, get me a human supervisor immediately!')">🚨 Trigger Distress Escalation</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Panel: Real-Time Conversation Stream & Aviation Cards -->
+                <div class="cockpit-panel conversation-panel">
+                    <div class="panel-header">
+                        <h2>Live Conversation Stream & Latency Masking</h2>
+                        <div class="session-info">Session: <code id="display-session-id">AV-INIT</code></div>
+                    </div>
+
+                    <!-- Transcript Feed -->
+                    <div class="transcript-feed" id="transcript-feed-container">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Interactive Flight / Ticket / Rebook Card Showcase -->
+                    <div class="aviation-card-container" id="aviation-card-slot" style="display: none;">
+                        <!-- Cards injected dynamically -->
+                    </div>
+
+                    <!-- Text Input Fallback -->
+                    <div class="chat-input-bar">
+                        <input type="text" id="text-speech-input" placeholder="Type aviation query (e.g., flight status, PNR, baggage)..." onkeydown="handleInputKey(event)">
+                        <button class="send-btn" id="send-input-btn" onclick="sendTextMessage()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 2: SUPERVISOR COMMAND CENTER -->
+        <section id="view-supervisor" class="tab-view">
+            <div class="supervisor-layout">
+                <!-- Active Calls Sidebar -->
+                <div class="cockpit-panel supervisor-calls-panel">
+                    <div class="panel-header">
+                        <h2>Active Call Sessions</h2>
+                        <span class="badge-count" id="active-calls-count">0</span>
+                    </div>
+                    <div class="calls-list" id="supervisor-calls-list">
+                        <!-- Populated by websocket events -->
+                        <div class="empty-state">No passenger calls currently active. Initiate a call from Passenger Terminal.</div>
+                    </div>
+                </div>
+
+                <!-- Focused Call Detail & Human Takeover Desk -->
+                <div class="cockpit-panel supervisor-desk-panel">
+                    <div class="panel-header">
+                        <h2>Supervisor Live Audio Tap & One-Click Takeover</h2>
+                        <div id="takeover-action-wrapper">
+                            <button class="takeover-btn" id="takeover-btn" onclick="executeSupervisorTakeover()" disabled>
+                                🎙️ One-Click Takeover
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="supervisor-call-meta" id="supervisor-meta-box">
+                        <div class="meta-row">
+                            <div class="meta-item"><span class="lbl">Passenger:</span> <strong id="sup-passenger">Awaiting session...</strong></div>
+                            <div class="meta-item"><span class="lbl">PNR Code:</span> <code id="sup-pnr">—</code></div>
+                            <div class="meta-item"><span class="lbl">Active Flight:</span> <strong id="sup-flight">—</strong></div>
+                            <div class="meta-item"><span class="lbl">Composite Confidence:</span> <span class="score-pill" id="sup-conf">—</span></div>
+                        </div>
+                    </div>
+
+                    <div class="supervisor-transcript-box" id="supervisor-transcript-container">
+                        <div class="empty-state">Select an active session from the left to view live synchronized transcripts.</div>
+                    </div>
+
+                    <!-- Direct Supervisor Message Dispatch -->
+                    <div class="supervisor-dispatch-bar">
+                        <input type="text" id="supervisor-input-msg" placeholder="Speak or message directly to passenger as Lead Supervisor..." onkeydown="handleSupervisorKey(event)" disabled>
+                        <button class="dispatch-btn" id="supervisor-send-btn" onclick="sendSupervisorMessage()" disabled>
+                            Transmit to Passenger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: AVIATION DATABASE EXPLORER -->
+        <section id="view-database" class="tab-view">
+            <div class="database-layout">
+                <div class="cockpit-panel">
+                    <div class="panel-header">
+                        <h2>Mock Airline Operational Database (PostgreSQL / Prisma Mirror)</h2>
+                        <button class="refresh-db-btn" onclick="refreshDatabaseView()">🔄 Refresh Data</button>
+                    </div>
+
+                    <div class="db-tables-grid">
+                        <!-- Flights Table -->
+                        <div class="db-table-card">
+                            <h3>✈️ Active Flights & Schedules</h3>
+                            <div class="table-responsive" id="db-flights-table-slot">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- PNR Bookings Table -->
+                        <div class="db-table-card">
+                            <h3>🎫 Passenger Name Records (PNR)</h3>
+                            <div class="table-responsive" id="db-pnr-table-slot">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Baggage Records Table -->
+                        <div class="db-table-card">
+                            <h3>🧳 Baggage RFID Telemetry</h3>
+                            <div class="table-responsive" id="db-baggage-table-slot">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Audio Player Element for Synthetic Speech / Filler Audio -->
+    <audio id="remote-audio-player" autoplay></audio>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
